@@ -125,17 +125,11 @@ extension ViewController {
   
   override func loadView() {
     super.loadView()
-    view.addBackground(imageName: "bg-sunny.png")
-    
-    view.addSubview(heading)
-    view.addSubview(username)
-    view.addSubview(password)
+    setupViews()
   }
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    
-    setupViews()
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -253,6 +247,11 @@ extension ViewController {
 extension ViewController {
   
   func setupViews() {
+    view.addBackground(imageName: "bg-sunny.png")
+    view.addSubview(heading)
+    view.addSubview(username)
+    view.addSubview(password)
+    
     view.addSubview(loginButton)
     loginButton.addSubview(spinner)
     
