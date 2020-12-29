@@ -74,7 +74,7 @@ class ViewController: UIViewController {
   lazy var cloud3: UIImageView = {
     let imageView = UIImageView()
     imageView.image = UIImage(named: "bg-sunny-cloud-3.png")
-    imageView.alpha = 0.0
+    imageView.alpha = 1.0
     imageView.translatesAutoresizingMaskIntoConstraints = false
     return imageView
   }()
@@ -82,7 +82,7 @@ class ViewController: UIViewController {
   lazy var cloud4: UIImageView = {
     let imageView = UIImageView()
     imageView.image = UIImage(named: "bg-sunny-cloud-4.png")
-    imageView.alpha = 0.0
+    imageView.alpha = 1.0
     imageView.translatesAutoresizingMaskIntoConstraints = false
     return imageView
   }()
@@ -186,6 +186,31 @@ extension ViewController {
       self.loginButton.center.y -= 60.0
     }, completion: nil)
   }
+  
+  func animateCloud(cloud: UIImageView) {
+    // calculate the average cloud speed
+    let cloudSpeed =  60.0 / view.frame.size.width
+    
+    ///calculate the duration for the animation to move the cloud to the right side of the screen
+    let duration = (view.frame.size.width - cloud.frame.origin.x) * cloudSpeed
+    
+    UIView.animate(
+      withDuration: TimeInterval(duration),
+      delay: 0.0,
+      options: .curveLinear,
+      animations: {
+        // Moves the cloud to just outside the screen area
+        cloud.frame.origin.x = self.view.frame.size.width
+      },
+      completion: { _ in
+        /// move the cloud to just outside the opposite edge of the screen from its current position
+        cloud.frame.origin.x = -cloud.frame.size.width
+        // re-animates cloud across the screen
+        self.animateCloud(cloud: cloud)
+        
+      }
+    )
+  }
 }
 // MARK: - Methods of the view lifecycle
 extension ViewController {
@@ -200,6 +225,12 @@ extension ViewController {
     
     //save the banner’s initial position
     statusPosition = status.center
+    
+    // Animate the clouds
+//    animateCloud(cloud: cloud1)
+//    animateCloud(cloud: cloud2)
+    animateCloud(cloud: cloud3)
+    animateCloud(cloud: cloud4)
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -256,8 +287,6 @@ extension ViewController {
                    animations: {
                     self.cloud1.alpha = 1.0
                     self.cloud2.alpha = 1.0
-                    self.cloud3.alpha = 1.0
-                    self.cloud4.alpha = 1.0
                    },
                    completion: nil
     )
