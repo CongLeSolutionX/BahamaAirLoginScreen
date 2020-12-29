@@ -441,7 +441,8 @@ extension UIView {
     
     self.addSubview(imageViewBackground)
     self.sendSubviewToBack(imageViewBackground)
-  }}
+  }
+}
 
 // MARK: - Helper methods
 extension ViewController {
