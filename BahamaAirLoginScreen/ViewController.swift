@@ -21,7 +21,7 @@ class ViewController: UIViewController {
     button.backgroundColor = UIColor(red: 160/255, green: 214/255, blue: 90/255, alpha: 1)
     button.setTitle("Login", for: .normal)
     button.setTitleColor(.blue, for: .normal)
-    button.addTarget(self, action: #selector(login), for: .touchUpInside)
+    button.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
     button.translatesAutoresizingMaskIntoConstraints = false
     return button
   }()
@@ -112,14 +112,81 @@ class ViewController: UIViewController {
     label.font = UIFont(name: "HelveticaNeue", size: 18.0)
     label.textColor = UIColor(red: 0.89, green: 0.38, blue: 0.0, alpha: 1.0)
     label.textAlignment = .center
+    label.translatesAutoresizingMaskIntoConstraints = false
     return label
   }()
   
+  // Properties used for transitioning views
   let messages = ["Connecting ...", "Authorizing ...", "Sending credentials ...", "Failed"]
-  
   var statusPosition = CGPoint.zero
+  
 }
 
+// MARK: - Transition methods
+extension ViewController {
+  func showMessage(index: Int) {
+    label.text = messages[index]
+    label.textColor = .systemRed
+    
+    UIView.transition(with: status, duration: 0.33,
+                      options: [.curveEaseOut, .transitionFlipFromBottom],
+                      animations: {
+                        self.status.isHidden = false
+                      },
+                      completion: {_ in
+                        /// When the transition completed, wait fro 2 seconds and
+                        /// check any any remainning messages.
+                        /// If so, remove the current message via `removeMessage(index:)`.
+                        /// You then call `showMessage(index:)` in the completion block of `removeMessage(index:)`
+                        /// to display the next message in sequence.
+                        delay(2.0) {
+                          if index < self.messages.count - 1 {
+                            self.removeMessage(index: index)
+                          } else {
+                            self.resetForm()
+                          }
+                        }
+                      }
+    )
+  }
+  
+  func removeMessage(index: Int) {
+    UIView.animate(
+      withDuration: 0.33,
+      delay: 0.0,
+      options: [],
+      animations: {
+        self.status.center.x += self.view.frame.size.width
+      },
+      completion: { _ in
+        self.status.isHidden = true
+        self.status.center = self.statusPosition
+        
+        self.showMessage(index: index + 1)
+      }
+    )
+  }
+  
+  func resetForm() {
+    UIView.transition(with: status, duration: 0.2, options: .transitionFlipFromTop, animations: {
+      self.status.isHidden = true
+      self.status.center = self.statusPosition
+    },
+    completion: nil
+    )
+    
+    UIView.animate(withDuration: 0.2, delay: 0.0, options: [], animations: {
+      // reset the spiner settingss
+      self.spinner.center = CGPoint(x: -20.0, y: 16.0)
+      self.spinner.alpha = 0.0
+      
+      // reset the login button settingss
+      self.loginButton.backgroundColor = UIColor(red: 0.63, green: 0.84, blue: 0.35, alpha: 1.0)
+      self.loginButton.bounds.size.width -= 80.0
+      self.loginButton.center.y -= 60.0
+    }, completion: nil)
+  }
+}
 // MARK: - Methods of the view lifecycle
 extension ViewController {
   
@@ -130,6 +197,9 @@ extension ViewController {
   
   override func viewDidLoad() {
     super.viewDidLoad()
+    
+    //save the banner’s initial position
+    statusPosition = status.center
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -218,7 +288,9 @@ extension ViewController {
         /// Increases the button’s width by 80 points over a duration time
         self.loginButton.bounds.size.width += 80.0
       },
-      completion: nil
+      completion: { _ in
+        self.showMessage(index: 0)
+      }
     )
     
     UIView.animate(
@@ -282,17 +354,20 @@ extension ViewController {
       password.widthAnchor.constraint(equalToConstant: 300),
       
       // Login button
-      loginButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 220),
+      loginButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 270),
       loginButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 100),
       loginButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -100),
       loginButton.heightAnchor.constraint(equalToConstant: 50),
-      //      loginButton.widthAnchor.constraint(equalToConstant: 200),
       
       // status image
-      status.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 220),
+      status.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 200),
       status.centerXAnchor.constraint(equalTo: view.centerXAnchor),
       status.heightAnchor.constraint(equalToConstant: 50),
       status.widthAnchor.constraint(equalToConstant: 200),
+      
+      // label
+      label.centerXAnchor.constraint(equalTo: status.centerXAnchor),
+      label.centerYAnchor.constraint(equalTo: status.centerYAnchor),
       
       // cloud1
       cloud1.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 75),
@@ -342,7 +417,7 @@ extension UIView {
 // MARK: - Helper methods
 extension ViewController {
   
-  @objc func login() {
+  @objc func loginButtonTapped() {
     view.endEditing(true)
     animateLoginButtonWhenTapped()
   }
