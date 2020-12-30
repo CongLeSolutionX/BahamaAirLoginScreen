@@ -12,21 +12,40 @@ func delay(seconds: Double, completion: @escaping ()->Void) {
   DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: completion)
 }
 func tintBackgroundColor(layer: CALayer, toColor: UIColor) {
-  let tint = CABasicAnimation(keyPath: "backgroundColor")
+  let tint = CASpringAnimation(keyPath: "backgroundColor")
+  tint.damping = 5.0
+  tint.initialVelocity = -10.0
   tint.fromValue = layer.backgroundColor
   tint.toValue = toColor.cgColor
-  tint.duration = 0.5
+  tint.duration = tint.settlingDuration
+  
   layer.add(tint, forKey: nil)
   layer.backgroundColor = toColor.cgColor
 }
 
 func roundCorners(layer: CALayer, toRadius: CGFloat) {
-  let round = CABasicAnimation(keyPath: "cornerRadius")
+  let round = CASpringAnimation(keyPath: "cornerRadius")
+  round.damping = 5.0
   round.fromValue = layer.cornerRadius
   round.toValue = toRadius
-  round.duration = 0.5
+  round.duration = round.settlingDuration
+  
   layer.add(round, forKey: nil)
   layer.cornerRadius = toRadius
+  
+  // config the border of textField
+  layer.borderWidth = 3.0
+  layer.borderColor = UIColor.clear.cgColor  // make transparent border
+  
+  // flash animation
+  let flash = CASpringAnimation(keyPath: "borderColor")
+  flash.damping = 7.0
+  flash.stiffness = 200.0
+  flash.fromValue = UIColor(red: 1.0, green: 0.27, blue: 0.0, alpha: 1.0).cgColor
+  flash.toValue = UIColor.white.cgColor
+  flash.duration = flash.settlingDuration
+  
+  layer.add(flash, forKey: nil)
 }
 
 class ViewController: UIViewController {
@@ -262,9 +281,6 @@ extension ViewController {
     animateCloud(layer: cloud3.layer)
     animateCloud(layer: cloud4.layer)
     
-    //    /// when the users tap on the Login button, it will move down and
-    //    /// cover the `infoLabel`
-    //    view.insertSubview(infoLabel, belowSubview: loginButton)
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -539,9 +555,43 @@ extension ViewController: UITextFieldDelegate {
     return true
   }
   
-  func textFieldDidBeginEditing(_ textField: UITextField) {
+  func textFieldDidEndEditing(_ textField: UITextField) {
+    
     guard let runningAnimation = infoLabel.layer.animationKeys() else { return }
     print(runningAnimation) // print out the active animations running on the label
+    
+    guard let text = textField.text else { return }
+    
+    /// Remind the users with jump animation if they input a string less than 5 characters
+    if text.count < 5 {
+      // jump animation
+      let jump = CASpringAnimation(keyPath: "position.y")
+      jump.fromValue = textField.layer.position.y + 1.0 // move down 1 point
+      jump.toValue = textField.layer.position.y // go back to the original position
+      
+      jump.initialVelocity = 100.0
+      jump.mass = 10.0
+      jump.stiffness = 1500.0
+      jump.damping = 50.0
+      jump.duration = jump.settlingDuration
+      
+      textField.layer.add(jump, forKey: nil)
+      
+      // config the border of textField
+      textField.layer.borderWidth = 3.0
+      textField.layer.borderColor = UIColor.clear.cgColor  // make transparent border
+      
+      // flash animation
+      let flash = CASpringAnimation(keyPath: "borderColor")
+      flash.damping = 7.0
+      flash.stiffness = 200.0
+      flash.fromValue = UIColor(red: 1.0, green: 0.27, blue: 0.0, alpha: 1.0).cgColor
+      flash.toValue = UIColor.white.cgColor
+      flash.duration = flash.settlingDuration
+      
+      textField.layer.add(flash, forKey: nil)
+      
+    }
   }
 }
 
@@ -582,10 +632,13 @@ extension ViewController: CAAnimationDelegate {
       let layer = anim.value(forKey: "layer") as? CALayer
       anim.setValue(nil, forKey: "layer")
       
-      let pulse = CABasicAnimation(keyPath: "transform.scale")
+      let pulse = CASpringAnimation(keyPath: "transform.scale")
       pulse.fromValue = 1.25
       pulse.toValue = 1.0
-      pulse.duration = 0.5
+      
+      pulse.damping = 7.5
+      // estimates the time required for the system to settle
+      pulse.duration = pulse.settlingDuration
       
       // remove the reference to the original layer
       layer?.add(pulse, forKey: nil)
