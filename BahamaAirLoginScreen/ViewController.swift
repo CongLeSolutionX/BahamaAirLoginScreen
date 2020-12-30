@@ -8,23 +8,28 @@
 import UIKit
 
 // A delay function
-func delay(_ seconds: Double, completion: @escaping ()->Void) {
+func delay(seconds: Double, completion: @escaping ()->Void) {
   DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: completion)
+}
+func tintBackgroundColor(layer: CALayer, toColor: UIColor) {
+  let tint = CABasicAnimation(keyPath: "backgroundColor")
+  tint.fromValue = layer.backgroundColor
+  tint.toValue = toColor.cgColor
+  tint.duration = 0.5
+  layer.add(tint, forKey: nil)
+  layer.backgroundColor = toColor.cgColor
+}
+
+func roundCorners(layer: CALayer, toRadius: CGFloat) {
+  let round = CABasicAnimation(keyPath: "cornerRadius")
+  round.fromValue = layer.cornerRadius
+  round.toValue = toRadius
+  round.duration = 0.5
+  layer.add(round, forKey: nil)
+  layer.cornerRadius = toRadius
 }
 
 class ViewController: UIViewController {
-  lazy var loginButton: UIButton = {
-    let button = UIButton()
-    //    button.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
-    button.layer.cornerRadius = 8.0
-    button.layer.masksToBounds = true
-    button.backgroundColor = UIColor(red: 160/255, green: 214/255, blue: 90/255, alpha: 1)
-    button.setTitle("Login", for: .normal)
-    button.setTitleColor(.blue, for: .normal)
-    button.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
-    button.translatesAutoresizingMaskIntoConstraints = false
-    return button
-  }()
   
   lazy var heading:  UILabel = {
     let label = UILabel()
@@ -55,10 +60,48 @@ class ViewController: UIViewController {
     return text
   }()
   
+  lazy var infoLabel: UILabel = {
+    let label = UILabel()
+    label.frame = CGRect(x: 0.0,
+                         y: loginButton.center.y + 60.0,
+                         width: view.frame.size.width,
+                         height: 30)
+    label.backgroundColor = .clear
+    label.font = UIFont(name: "HelveticaNeue", size: 12.0)
+    label.textAlignment = .center
+    label.textColor = .white
+    label.text = "Tap on a field and enter username and password"
+    label.translatesAutoresizingMaskIntoConstraints = false
+    return label
+  }()
+  
+  lazy var loginButton: UIButton = {
+    let button = UIButton()
+    //    button.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
+    button.layer.cornerRadius = 8.0
+    button.layer.masksToBounds = true
+    button.backgroundColor = UIColor(red: 160/255, green: 214/255, blue: 90/255, alpha: 1)
+    button.setTitle("Login", for: .normal)
+    button.setTitleColor(.blue, for: .normal)
+    button.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
+    button.translatesAutoresizingMaskIntoConstraints = false
+    return button
+  }()
+  
+  lazy var spinner: UIActivityIndicatorView = {
+    let spinner = UIActivityIndicatorView()
+    spinner.frame = CGRect(x: -20.0, y: 6.0, width: 20.0, height: 20.0)
+    spinner.startAnimating()
+    spinner.alpha = 0.0
+    spinner.style = .large
+    spinner.translatesAutoresizingMaskIntoConstraints = false
+    return spinner
+  }()
+  
   lazy var cloud1: UIImageView = {
     let imageView = UIImageView()
     imageView.image = UIImage(named: "bg-sunny-cloud-1.png")
-    imageView.alpha = 0.0
+    imageView.alpha = 1.0
     imageView.translatesAutoresizingMaskIntoConstraints = false
     return imageView
   }()
@@ -66,7 +109,7 @@ class ViewController: UIViewController {
   lazy var cloud2: UIImageView = {
     let imageView = UIImageView()
     imageView.image = UIImage(named: "bg-sunny-cloud-2.png")
-    imageView.alpha = 0.0
+    imageView.alpha = 1.0
     imageView.translatesAutoresizingMaskIntoConstraints = false
     return imageView
   }()
@@ -87,14 +130,14 @@ class ViewController: UIViewController {
     return imageView
   }()
   
-  lazy var spinner: UIActivityIndicatorView = {
-    let spinner = UIActivityIndicatorView()
-    spinner.frame = CGRect(x: -20.0, y: 6.0, width: 20.0, height: 20.0)
-    spinner.startAnimating()
-    spinner.alpha = 0.0
-    spinner.style = .large
-    spinner.translatesAutoresizingMaskIntoConstraints = false
-    return spinner
+  lazy var label: UILabel = {
+    let label = UILabel()
+    label.frame = CGRect(x: 0.0, y: 0.0, width: status.frame.size.width, height: status.frame.size.height)
+    label.font = UIFont(name: "HelveticaNeue", size: 18.0)
+    label.textColor = UIColor(red: 0.89, green: 0.38, blue: 0.0, alpha: 1.0)
+    label.textAlignment = .center
+    label.translatesAutoresizingMaskIntoConstraints = false
+    return label
   }()
   
   lazy var status: UIImageView = {
@@ -104,16 +147,6 @@ class ViewController: UIViewController {
     imageView.center = loginButton.center
     imageView.translatesAutoresizingMaskIntoConstraints = false
     return imageView
-  }()
-  
-  lazy var label: UILabel = {
-    let label = UILabel()
-    label.frame = CGRect(x: 0.0, y: 0.0, width: status.frame.size.width, height: status.frame.size.height)
-    label.font = UIFont(name: "HelveticaNeue", size: 18.0)
-    label.textColor = UIColor(red: 0.89, green: 0.38, blue: 0.0, alpha: 1.0)
-    label.textAlignment = .center
-    label.translatesAutoresizingMaskIntoConstraints = false
-    return label
   }()
   
   // Properties used for transitioning views
@@ -139,7 +172,7 @@ extension ViewController {
                         /// If so, remove the current message via `removeMessage(index:)`.
                         /// You then call `showMessage(index:)` in the completion block of `removeMessage(index:)`
                         /// to display the next message in sequence.
-                        delay(2.0) {
+                        delay(seconds: 2.0) {
                           if index < self.messages.count - 1 {
                             self.removeMessage(index: index)
                           } else {
@@ -172,7 +205,12 @@ extension ViewController {
       self.status.isHidden = true
       self.status.center = self.statusPosition
     },
-    completion: nil
+    completion: { _ in
+      /// reset the tint background color and corner radius for login button
+      let tintColor = UIColor(red: 0.63, green: 0.84, blue: 0.35, alpha: 1.0)
+      tintBackgroundColor(layer: self.loginButton.layer, toColor: tintColor)
+      roundCorners(layer: self.loginButton.layer, toRadius: 10.0)
+    }
     )
     
     UIView.animate(withDuration: 0.2, delay: 0.0, options: [], animations: {
@@ -187,29 +225,21 @@ extension ViewController {
     }, completion: nil)
   }
   
-  func animateCloud(cloud: UIImageView) {
+  func animateCloud(layer: CALayer) {
     // calculate the average cloud speed
-    let cloudSpeed =  60.0 / view.frame.size.width
+    let cloudSpeed =  60.0 / Double(view.layer.frame.size.width)
     
     ///calculate the duration for the animation to move the cloud to the right side of the screen
-    let duration = (view.frame.size.width - cloud.frame.origin.x) * cloudSpeed
+    let duration: TimeInterval = Double(view.layer.frame.size.width - layer.frame.origin.x) * cloudSpeed
     
-    UIView.animate(
-      withDuration: TimeInterval(duration),
-      delay: 0.0,
-      options: .curveLinear,
-      animations: {
-        // Moves the cloud to just outside the screen area
-        cloud.frame.origin.x = self.view.frame.size.width
-      },
-      completion: { _ in
-        /// move the cloud to just outside the opposite edge of the screen from its current position
-        cloud.frame.origin.x = -cloud.frame.size.width
-        // re-animates cloud across the screen
-        self.animateCloud(cloud: cloud)
-        
-      }
-    )
+    let cloudMove = CABasicAnimation(keyPath: "position.x")
+    cloudMove.duration = duration
+    cloudMove.toValue = self.view.bounds.width + layer.bounds.width / 2
+    cloudMove.delegate = self
+    cloudMove.setValue("cloud", forKey: "name")
+    cloudMove.setValue(layer, forKey: "layer")
+    
+    layer.add(cloudMove, forKey: nil)
   }
 }
 // MARK: - Methods of the view lifecycle
@@ -227,82 +257,153 @@ extension ViewController {
     statusPosition = status.center
     
     // Animate the clouds
-//    animateCloud(cloud: cloud1)
-//    animateCloud(cloud: cloud2)
-    animateCloud(cloud: cloud3)
-    animateCloud(cloud: cloud4)
+    animateCloud(layer: cloud1.layer)
+    animateCloud(layer: cloud2.layer)
+    animateCloud(layer: cloud3.layer)
+    animateCloud(layer: cloud4.layer)
+    
+    //    /// when the users tap on the Login button, it will move down and
+    //    /// cover the `infoLabel`
+    //    view.insertSubview(infoLabel, belowSubview: loginButton)
   }
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
-    /// Place each of the form elements outside the visible bounds of the screen
-    heading.center.x  -= view.bounds.width
-    username.center.x -= view.bounds.width
-    password.center.x -= view.bounds.width
+    intialFormUIElementsAnimation()
+    fadingClouds()
     
-    /// set the start position of the button a bit lower on the y-axis
-    /// and set its alpha value to zero so that it will start out as invisible.
-    loginButton.center.y += 30.0
-    loginButton.alpha = 0.0
+    
   }
   
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    initialUIElementsAnimation()
+    initialLoginButtonAnimation()
     setupConstraints()
+    
+    animatingInfoLabel()
+    
+    username.delegate = self
+    password.delegate = self
   }
 }
 
 // MARK: - Setup aniamtion for all the UI elements
 extension ViewController {
   
-  func initialUIElementsAnimation() {
-    /// Animate the form elements onto the screen when the user opens the application
-    UIView.animate(withDuration: 1.0) {
-      self.heading.center.x += self.view.bounds.width
-    }
+  func intialFormUIElementsAnimation() {
+    let flyRight = CABasicAnimation(keyPath: "position.x")
+    flyRight.fromValue = -view.bounds.size.width / 2
+    flyRight.toValue = view.bounds.size.width / 2
+    flyRight.duration = 0.5 // last for half of a second
     
-    UIView.animate(withDuration: 1.0,
-                   delay: 0.5,
-                   options: .curveEaseInOut,
-                   animations: {
-                    self.username.center.x += self.view.bounds.width
-                   },
-                   completion: nil
-    )
+    // let the CAAnimation instance stay after animated
+    flyRight.fillMode = .both
     
-    UIView.animate(withDuration: 1.0,
-                   delay: 0.7,
-                   options: .curveEaseInOut,
-                   animations: {
-                    self.password.center.x += self.view.bounds.width
-                   },
-                   completion: nil
-    )
+    flyRight.delegate = self
+    flyRight.setValue("form", forKey: "name")
+    flyRight.setValue(heading.layer, forKey: "layer")
     
-    /// Fade in all the clouds
-    UIView.animate(withDuration: 1.0,
-                   delay: 0.9,
-                   options: [.repeat, .autoreverse],
-                   animations: {
-                    self.cloud1.alpha = 1.0
-                    self.cloud2.alpha = 1.0
-                   },
-                   completion: nil
-    )
+    heading.layer.add(flyRight, forKey: nil)    // add animation layer to heading label
+    flyRight.beginTime = CACurrentMediaTime() + 0.3
     
-    /// Spring animation for the login button
-    UIView.animate(withDuration: 3.0,
-                   delay: 0.5,
-                   usingSpringWithDamping: 0.1,
-                   initialSpringVelocity: 1.0,
-                   options: .curveEaseInOut,
+    flyRight.setValue(username.layer, forKey: "layer")
+    username.layer.add(flyRight, forKey: nil)   // add animation layer to username label
+    username.layer.position.x = view.bounds.size.width / 2 // set this UI to be on center after animated
+    flyRight.beginTime = CACurrentMediaTime() + 0.4
+    
+    flyRight.setValue(password.layer, forKey: "layer")
+    password.layer.add(flyRight, forKey: nil) // add animation layer to password label
+    password.layer.position.x = view.bounds.size.width / 2 // set this UI to be on center after animated
+    
+  }
+  
+  func animatingInfoLabel() {
+    /// slide the infoLabel from the right when the app firsts open
+    let flyLeft = CABasicAnimation(keyPath: "position.x")
+    flyLeft.fromValue = infoLabel.layer.position.x + view.frame.size.width
+    flyLeft.toValue = infoLabel.layer.position.x
+    flyLeft.duration = 5.0
+    
+    flyLeft.repeatCount = 2.5
+    flyLeft.autoreverses = true
+    
+    flyLeft.speed = 2.0 // run x2 of the normal speed
+    
+    // the speed for the layer and nimation run on that layer
+    //infoLabel.layer.speed = 2.0 // in this case, aka run x4 time the normal time
+   
+    
+    infoLabel.layer.add(flyLeft, forKey: "infoLabelAppear")
+    
+    /// Fade in the infoLabel when it slides in
+    let fadeLabelIn = CABasicAnimation(keyPath: "opacity")
+    fadeLabelIn.fromValue = 0.2
+    fadeLabelIn.toValue = 1.0
+    fadeLabelIn.duration = 4.5
+    
+    infoLabel.layer.add(fadeLabelIn, forKey: "fadeIn")
+  }
+  
+  /// Set up fading efect for clouds
+  func fadingClouds() {
+    let fadeIn = CABasicAnimation(keyPath: "opacity")
+    fadeIn.fromValue = 0.0
+    fadeIn.toValue = 1.0
+    fadeIn.duration = 0.5
+    fadeIn.fillMode = .backwards
+    fadeIn.beginTime = CACurrentMediaTime() + 0.5
+    cloud1.layer.add(fadeIn, forKey: nil)
+    
+    fadeIn.beginTime = CACurrentMediaTime() + 0.7
+    cloud2.layer.add(fadeIn, forKey: nil)
+    
+    fadeIn.beginTime = CACurrentMediaTime() + 0.9
+    cloud3.layer.add(fadeIn, forKey: nil)
+    
+    fadeIn.beginTime = CACurrentMediaTime() + 1.1
+    cloud4.layer.add(fadeIn, forKey: nil)
+    
+    UIView.animate(withDuration: 0.5, delay: 0.5, usingSpringWithDamping: 0.5,
+                   initialSpringVelocity: 0.0,
                    animations: {
                     self.loginButton.center.y -= 30.0
                     self.loginButton.alpha = 1.0
                    },
                    completion: nil
     )
+  }
+  
+  /// Use animation group  for the login button
+  func initialLoginButtonAnimation() {
+    let groupAnimation = CAAnimationGroup()
+    groupAnimation.beginTime = CACurrentMediaTime() + 0.5
+    groupAnimation.duration = 0.5
+    groupAnimation.fillMode = .backwards
+    
+    // set easing animationon our animation group as a whole
+    groupAnimation.timingFunction = CAMediaTimingFunction(name: .easeIn)
+    
+    
+    /// start with a very large version of the button
+    /// and, over the course of the animation, shrink it to its normal size.
+    let scaleDown = CABasicAnimation(keyPath: "transform.scale")
+    scaleDown.fromValue = 3.5
+    scaleDown.toValue = 1.0
+    
+    /// starts with the layer rotated at a 45-degree angle
+    /// and moves it to its normal orientation of zero degrees.
+    let rotate = CABasicAnimation(keyPath: "transform.rotation")
+    rotate.fromValue = .pi / 4.0
+    rotate.toValue = 0.0
+    
+    /// fade-in animation
+    let fade = CABasicAnimation(keyPath: "opacity")
+    fade.fromValue = 0.0
+    fade.toValue = 1.0
+    
+    /// Add all animation above into the login  button
+    groupAnimation.animations = [scaleDown, rotate, fade]
+    loginButton.layer.add(groupAnimation, forKey: nil)
   }
   
   func animateLoginButtonWhenTapped() {
@@ -342,6 +443,11 @@ extension ViewController {
       },
       completion: nil
     )
+    // Animating the tint background color and corner radius
+    let tintColor = UIColor(red: 0.85, green: 0.83, blue: 0.45, alpha: 1.0)
+    tintBackgroundColor(layer: loginButton.layer, toColor: tintColor)
+    roundCorners(layer: loginButton.layer, toRadius: 25.0)
+    
   }
 }
 // MARK: - Set up views and contraints
@@ -363,6 +469,10 @@ extension ViewController {
     view.addSubview(cloud2)
     view.addSubview(cloud3)
     view.addSubview(cloud4)
+    
+    /// when the users tap on the Login button, it will move down and
+    /// cover the `infoLabel`
+    view.insertSubview(infoLabel, belowSubview: loginButton)
   }
   
   func setupConstraints() {
@@ -387,6 +497,10 @@ extension ViewController {
       loginButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 100),
       loginButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -100),
       loginButton.heightAnchor.constraint(equalToConstant: 50),
+      
+      // infoLabel
+      infoLabel.topAnchor.constraint(equalTo: loginButton.bottomAnchor, constant: 20),
+      infoLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
       
       // status image
       status.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 200),
@@ -418,11 +532,16 @@ extension ViewController {
 }
 
 // MARK: - UITextFieldDelegate
-extension ViewController {
+extension ViewController: UITextFieldDelegate {
   @objc func textFieldShouldReturn(_ textField: UITextField) -> Bool {
     let nextField = (textField === username) ? password : username
     nextField.becomeFirstResponder()
     return true
+  }
+  
+  func textFieldDidBeginEditing(_ textField: UITextField) {
+    guard let runningAnimation = infoLabel.layer.animationKeys() else { return }
+    print(runningAnimation) // print out the active animations running on the label
   }
 }
 
@@ -433,7 +552,7 @@ extension UIView {
     let width = UIScreen.main.bounds.size.width
     let height = UIScreen.main.bounds.size.height
     
-    let imageViewBackground = UIImageView(frame: CGRect(x: 0, y: 0, width: width, height: height) )
+    let imageViewBackground = UIImageView(frame: CGRect(x: 0, y: 0, width: width, height: height))
     guard let safelyImageName = imageName else { return }
     imageViewBackground.image = UIImage(named: safelyImageName)
     
@@ -450,5 +569,39 @@ extension ViewController {
   @objc func loginButtonTapped() {
     view.endEditing(true)
     animateLoginButtonWhenTapped()
+  }
+}
+
+// MARK: - CAAnimationDelegate
+extension ViewController: CAAnimationDelegate {
+  func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
+    guard let name = anim.value(forKey: "name") as? String else { return }
+    
+    // When animation stops, perfrom pulse effect for 0.5 second
+    if name == "form" {
+      let layer = anim.value(forKey: "layer") as? CALayer
+      anim.setValue(nil, forKey: "layer")
+      
+      let pulse = CABasicAnimation(keyPath: "transform.scale")
+      pulse.fromValue = 1.25
+      pulse.toValue = 1.0
+      pulse.duration = 0.5
+      
+      // remove the reference to the original layer
+      layer?.add(pulse, forKey: nil)
+    }
+    
+    // Repeat animation for the clouds when they stopped
+    if name == "cloud" {
+      if let layer = anim.value(forKey: "layer") as? CALayer {
+        anim.setValue(nil, forKey: "layer")
+        
+        layer.position.x = -layer.bounds.width / 2
+        
+        delay(seconds: 0.5) {
+          self.animateCloud(layer: layer)
+        }
+      }
+    }
   }
 }
