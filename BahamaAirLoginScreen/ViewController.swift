@@ -241,7 +241,19 @@ extension ViewController {
       self.loginButton.backgroundColor = UIColor(red: 0.63, green: 0.84, blue: 0.35, alpha: 1.0)
       self.loginButton.bounds.size.width -= 80.0
       self.loginButton.center.y -= 60.0
-    }, completion: nil)
+    }, completion: nil
+    )
+    
+    // wobble animation
+    let wobble = CAKeyframeAnimation(keyPath: "transform.rotation")
+    wobble.duration = 0.25
+    wobble.repeatCount = 4
+    wobble.values = [0.0, -.pi / 4.0, 0.0, .pi / 4.0, 0.0]
+    wobble.keyTimes = [0.0, 0.25, 0.5, 0.75, 1.0]
+    
+    /// If users click on the login button and do not provide credentials into forms, then
+    /// perfrom wobble animation for the heading title to remind the users
+    heading.layer.add(wobble, forKey: nil)
   }
   
   func animateCloud(layer: CALayer) {
@@ -422,7 +434,7 @@ extension ViewController {
     loginButton.layer.add(groupAnimation, forKey: nil)
   }
   
-  func animateLoginButtonWhenTapped() {
+  func handleLoginButtonTapped() {
     
     UIView.animate(
       withDuration: 1.5,
@@ -463,7 +475,42 @@ extension ViewController {
     let tintColor = UIColor(red: 0.85, green: 0.83, blue: 0.45, alpha: 1.0)
     tintBackgroundColor(layer: loginButton.layer, toColor: tintColor)
     roundCorners(layer: loginButton.layer, toRadius: 25.0)
+
+    animatingBalloon()
+  }
+  
+  func animatingBalloon() {
+    // Add balloon image layer
+    let balloonLayer = CALayer() // since we dont need AutoLayout constraints from UIKit
+    let balloonImage = UIImage(named: "balloon") ?? UIImage()
     
+    balloonLayer.contents = balloonImage.cgImage
+    balloonLayer.frame = CGRect(x: -50.0, y: 0.0, width: 50.0, height: 65.0)
+    
+    // display the balloon layer underneath other elements
+    view.layer.insertSublayer(balloonLayer, below: username.layer)
+    
+    // flight animation for balloon
+    let flight = CAKeyframeAnimation(keyPath: "position")
+    flight.duration = 12.0 // is the same at the faux authentication process
+    
+    /// convert an array of points into an array of points boxed as `NSValues`
+    flight.values = [
+      CGPoint(x: -50.0, y: 0.0),
+      CGPoint(x: view.frame.width + 50.0, y: 160.0),
+      CGPoint(x: -50.0, y: loginButton.center.y)
+    ].map {NSValue(cgPoint: $0)}
+    
+    flight.keyTimes = [0.0, 0.5, 1.0]
+    
+    balloonLayer.add(flight, forKey: nil)
+    balloonLayer.position = CGPoint(x: -50.0,
+                                    y: loginButton.center.y)
+    
+    /// Notes:
+    /// - Unlike views, layer keyframe animations animate a single property in a continuous animation
+    /// over several possible key-points.
+    /// - You can animate complex property data types by wrapping them as an `NSValue` type
   }
 }
 // MARK: - Set up views and contraints
@@ -618,7 +665,7 @@ extension ViewController {
   
   @objc func loginButtonTapped() {
     view.endEditing(true)
-    animateLoginButtonWhenTapped()
+    handleLoginButtonTapped()
   }
 }
 
